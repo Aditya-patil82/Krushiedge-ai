@@ -880,14 +880,21 @@
               <div class="settings-group-title" id="setAiGroupTitle">AI ಕಾರ್ಯಾಚರಣೆ ಮೋಡ್ (AI Mode)</div>
               <div class="ai-mode-selector">
                 <label class="ai-mode-option">
-                  <input type="radio" name="aiMode" value="hybrid" checked>
+                  <input type="radio" name="aiMode" value="gemini" checked id="radioAiGemini">
+                  <div>
+                    <strong id="optGeminiTitle">✨ Google Gemini 1.5 Flash AI (Live Cloud)</strong>
+                    <p id="optGeminiSub">ನೈಜ-ಸಮಯದ ಕೃಷಿ AI ಮಾದರಿ (Google GenAI Engine)</p>
+                  </div>
+                </label>
+                <label class="ai-mode-option">
+                  <input type="radio" name="aiMode" value="hybrid" id="radioAiHybrid">
                   <div>
                     <strong id="optHybridTitle">ಹೈಬ್ರಿಡ್ ಮೋಡ್ (Hybrid Edge + Cloud)</strong>
                     <p id="optHybridSub">ಇಂಟರ್ನೆಟ್ ಇದ್ದಾಗ ಆನ್‌ಲೈನ್, ಇಲ್ಲದಿದ್ದಾಗ ಆಫ್‌ಲೈನ್ AI</p>
                   </div>
                 </label>
                 <label class="ai-mode-option">
-                  <input type="radio" name="aiMode" value="local">
+                  <input type="radio" name="aiMode" value="local" id="radioAiLocal">
                   <div>
                     <strong id="optLocalTitle">ಆಫ್‌ಲೈನ್ ಮಾತ್ರ (Offline Edge AI Only)</strong>
                     <p id="optLocalSub">100% ಫೋನ್‌ನಲ್ಲಿಯೇ ಕಾರ್ಯನಿರ್ವಹಣೆ</p>
@@ -1035,6 +1042,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=4.0"></script>
+  <script src="app.js?v=6.0"></script>
 </body>
 </html>
