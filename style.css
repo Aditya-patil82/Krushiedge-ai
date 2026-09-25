@@ -1175,6 +1175,14 @@ body {
   border-bottom-right-radius: 2px;
 }
 
+.voice-input-composite {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+}
+
 .voice-controls-bar {
   display: flex;
   flex-direction: column;
@@ -1186,34 +1194,106 @@ body {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: var(--krushi-primary-dark);
+  background: linear-gradient(135deg, var(--krushi-primary), var(--krushi-primary-dark));
   color: #fff;
-  border: none;
+  border: 3px solid #E8F5E9;
   font-size: 24px;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(27, 67, 50, 0.4);
+  box-shadow: 0 4px 16px rgba(27, 67, 50, 0.35);
+  transition: all 0.25s ease;
+}
+
+.btn-mic-large:hover {
+  transform: scale(1.05);
+}
+
+.btn-mic-large.listening {
+  background: #C62828 !important;
+  animation: pulse-mic 1.2s infinite;
+}
+
+@keyframes pulse-mic {
+  0% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0.7); }
+  70% { box-shadow: 0 0 0 16px rgba(198, 40, 40, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0); }
 }
 
 .mic-status-label {
   font-size: 11px;
-  color: var(--text-muted);
+  font-weight: 600;
+  color: var(--krushi-primary-dark);
 }
 
 .quick-prompts-row {
   display: flex;
   gap: 6px;
   overflow-x: auto;
+  padding: 4px 2px;
+  scrollbar-width: none;
+}
+
+.quick-prompts-row::-webkit-scrollbar {
+  display: none;
 }
 
 .btn-prompt {
   background: var(--krushi-surface);
-  border: 1px solid var(--krushi-border);
+  border: 1px solid var(--krushi-primary-container);
+  color: var(--krushi-primary-dark);
   padding: 6px 12px;
   border-radius: 16px;
   font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-prompt:hover {
+  background: var(--krushi-primary);
+  color: #fff;
+  border-color: var(--krushi-primary);
+}
+
+.voice-text-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: var(--krushi-surface);
+  border: 1.5px solid var(--krushi-border);
+  border-radius: 24px;
+  padding: 4px 6px 4px 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.voice-text-form input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--text-main);
+}
+
+.btn-send-voice {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--krushi-primary);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.btn-send-voice:hover {
+  background: var(--krushi-primary-dark);
 }
 
 /* Settings */

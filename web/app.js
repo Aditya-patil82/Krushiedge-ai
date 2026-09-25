@@ -667,16 +667,37 @@ document.addEventListener('DOMContentLoaded', () => {
     speakDiagnosisResult();
   });
 
-  // Voice Assistant
+  // ── VOICE ASSISTANT EVENT LISTENERS ──
   document.getElementById('btnStartVoiceInput')?.addEventListener('click', () => {
     toggleVoiceRecognition();
   });
 
-  document.querySelectorAll('.btn-prompt').forEach(pBtn => {
-    pBtn.addEventListener('click', () => {
-      const query = pBtn.getAttribute('data-query');
+  const voiceTextInput = document.getElementById('voiceTextInput');
+  const btnSendVoiceText = document.getElementById('btnSendVoiceText');
+
+  function submitVoiceText() {
+    const q = voiceTextInput?.value.trim();
+    if (q) {
+      handleVoiceQuery(q);
+      if (voiceTextInput) voiceTextInput.value = '';
+    }
+  }
+
+  btnSendVoiceText?.addEventListener('click', submitVoiceText);
+  voiceTextInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submitVoiceText();
+    }
+  });
+
+  // Delegated click listener for all quick topic prompt chips
+  document.addEventListener('click', (e) => {
+    const pBtn = e.target.closest('.btn-prompt');
+    if (pBtn) {
+      const query = pBtn.getAttribute('data-query') || pBtn.textContent.trim();
       if (query) handleVoiceQuery(query);
-    });
+    }
   });
 
   // Mandi Search
@@ -1292,47 +1313,73 @@ function showScannedPreview(dataUrl) {
 
 // ── COMPREHENSIVE INTELLIGENT REAL AI VOICE ASSISTANT ENGINE ──
 function toggleVoiceRecognition() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    handleVoiceQuery(currentLanguage === 'kn' ? "ರಾಗಿ ಬೆಳೆಗೆ ಯಾವ ಗೊಬ್ಬರ ಹಾಕಬೇಕು?" : (currentLanguage === 'hi' ? "फसल के लिए कौन सी खाद अच्छी है?" : "What fertilizer is best for crop?"));
-    return;
-  }
-
-  const recognition = new SpeechRecognition();
-  recognition.lang = (currentLanguage === 'kn') ? 'kn-IN' : ((currentLanguage === 'hi') ? 'hi-IN' : 'en-IN');
-  recognition.interimResults = false;
-
+  const micBtn = document.getElementById('btnStartVoiceInput');
   const micIcon = document.getElementById('micIcon');
   const micStatus = document.getElementById('micStatusLabel');
   const t = i18n[currentLanguage] || i18n.kn;
 
-  recognition.onstart = () => {
-    isListeningSpeech = true;
-    if (micIcon) micIcon.style.color = '#C62828';
-    if (micStatus) micStatus.textContent = t.micStatusListening;
-  };
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    if (micStatus) micStatus.textContent = (currentLanguage === 'kn') ? "ಧ್ವನಿ ಲಭ್ಯವಿಲ್ಲ - ಟೈಪ್ ಮಾಡಿ ಅಥವಾ ಕೆಳಗಿನ ಆಯ್ಕೆ ಒತ್ತಿ" : "Speech unavailable - please type or tap topic";
+    const sampleQuery = (currentLanguage === 'kn') ? "ರಾಗಿ ಬೆಳೆಗೆ ಯಾವ ಗೊಬ್ಬರ ಹಾಕಬೇಕು?" : ((currentLanguage === 'hi') ? "फसल के लिए कौन सी खाद अच्छी है?" : "What fertilizer is best for my crop?");
+    handleVoiceQuery(sampleQuery);
+    return;
+  }
 
-  recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript;
-    handleVoiceQuery(transcript);
-  };
+  if (isListeningSpeech) {
+    return;
+  }
 
-  recognition.onend = () => {
+  try {
+    const recognition = new SpeechRecognition();
+    recognition.lang = (currentLanguage === 'kn') ? 'kn-IN' : ((currentLanguage === 'hi') ? 'hi-IN' : 'en-IN');
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      isListeningSpeech = true;
+      if (micBtn) micBtn.classList.add('listening');
+      if (micIcon) micIcon.style.color = '#fff';
+      if (micStatus) micStatus.textContent = t.micStatusListening || "ಆಲಿಸಲಾಗುತ್ತಿದೆ... ಮಾತನಾಡಿ (Listening...)";
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      if (transcript && transcript.trim()) {
+        handleVoiceQuery(transcript.trim());
+      }
+    };
+
+    recognition.onend = () => {
+      isListeningSpeech = false;
+      if (micBtn) micBtn.classList.remove('listening');
+      if (micIcon) micIcon.style.color = '#fff';
+      if (micStatus) micStatus.textContent = t.micStatusTap || "ಮಾತನಾಡಲು ಮೈಕ್ ಒತ್ತಿ (Tap to Speak)";
+    };
+
+    recognition.onerror = (e) => {
+      console.warn("Speech error:", e.error);
+      isListeningSpeech = false;
+      if (micBtn) micBtn.classList.remove('listening');
+      if (micIcon) micIcon.style.color = '#fff';
+      if (micStatus) micStatus.textContent = t.micStatusTap || "ಮಾತನಾಡಲು ಮೈಕ್ ಒತ್ತಿ (Tap to Speak)";
+      
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        const sampleQuery = (currentLanguage === 'kn') ? "ರಾಗಿ ಬೆಳೆಗೆ ಯಾವ ಗೊಬ್ಬರ ಹಾಕಬೇಕು?" : "What fertilizer is best for my crop?";
+        handleVoiceQuery(sampleQuery);
+      }
+    };
+
+    recognition.start();
+  } catch (err) {
+    console.warn("Speech start exception:", err);
     isListeningSpeech = false;
-    if (micIcon) micIcon.style.color = 'inherit';
-    if (micStatus) micStatus.textContent = t.micStatusTap;
-  };
-
-  recognition.onerror = () => {
-    isListeningSpeech = false;
-    if (micIcon) micIcon.style.color = 'inherit';
-    if (micStatus) micStatus.textContent = t.micStatusTap;
-  };
-
-  recognition.start();
+    if (micBtn) micBtn.classList.remove('listening');
+  }
 }
 
 async function handleVoiceQuery(userText) {
+  if (!userText || !userText.trim()) return;
   const chatHistory = document.getElementById('chatHistory');
   if (!chatHistory) return;
 
@@ -1368,31 +1415,6 @@ async function handleVoiceQuery(userText) {
   speakUtterance(replyText, currentLanguage);
 }
 
-// ── REAL AI INTEGRATION (Puter.js Free LLM + Direct AI + Agronomy Engine) ──
-async function callRealAiService(promptText, lang, cropName, areaVal, villageVal) {
-  const langName = (lang === 'kn') ? 'Kannada (ಕನ್ನಡ)' : ((lang === 'hi') ? 'Hindi (हिन्दी)' : 'English');
-  const systemPrompt = `You are KrushiEdge AI, an expert Indian agricultural scientist assisting a farmer with ${areaVal} acres of ${cropName} in ${villageVal}, Karnataka.
-Answer the farmer's question with precise, actionable, practical advice strictly in 2 to 3 concise sentences in ${langName}. Do not use markdown bullet points or bold symbols. Speak warmly and directly.`;
-
-  // 1. Try Puter.js Free AI (GPT-4o-mini / Claude in browser, no key needed)
-  if (typeof window.puter !== 'undefined' && window.puter.ai && typeof window.puter.ai.chat === 'function') {
-    try {
-      const fullPrompt = `${systemPrompt}\n\nFarmer's Query: "${promptText}"`;
-      const chatPromise = window.puter.ai.chat(fullPrompt);
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5500));
-      const res = await Promise.race([chatPromise, timeoutPromise]);
-      const resText = (typeof res === 'string') ? res : (res?.message?.content || res?.text || '');
-      if (resText && resText.trim().length > 10) {
-        return resText.trim();
-      }
-    } catch (err) {
-      console.log("Puter AI:", err.message);
-    }
-  }
-
-  return null;
-}
-
 async function generateSmartAgriResponse(query) {
   const q = query.toLowerCase();
   const lang = currentLanguage || 'kn';
@@ -1401,16 +1423,6 @@ async function generateSmartAgriResponse(query) {
   const area = parseFloat(currentFarm.area) || 2.5;
   const village = (currentFarm.village || 'ಮಂಡ್ಯ').split(' ')[0];
   const farmerName = (currentUser.name || 'ಶ್ರೀನಿವಾಸ್').split(' ')[0];
-
-  // Try live real AI first
-  try {
-    const realAiAnswer = await callRealAiService(query, lang, cName, area, village);
-    if (realAiAnswer) {
-      return realAiAnswer;
-    }
-  } catch (e) {
-    console.log("Live AI fallback triggered:", e);
-  }
 
   // 1. FERTILIZERS / NUTRITION / MANURE (ಗೊಬ್ಬರ, ಯೂರಿಯಾ, ಡಿಎಪಿ, NPK, खाद, Fertilizer, Compost)
   if (q.includes('ಗೊಬ್ಬರ') || q.includes('ಯೂರಿಯಾ') || q.includes('ಡಿಎಪಿ') || q.includes('ಪೋಷಕಾಂಶ') || q.includes('ಖಾದ್') || q.includes('खाद') || q.includes('उर्वरक') || q.includes('fertilizer') || q.includes('npk') || q.includes('dap') || q.includes('urea') || q.includes('zinc') || q.includes('potash')) {

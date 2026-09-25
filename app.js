@@ -389,18 +389,28 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── AUTH SUBMIT: LOGIN ──
-  formLogin?.addEventListener('submit', (e) => {
-    e.preventDefault();
+  function doLogin() {
     const id = document.getElementById('inputLoginIdentifier')?.value.trim() || '9845012345';
     const name = (id === '9845012345' || !id) ? 'ಶ್ರೀನಿವಾಸ್ ಗೌಡ (Srinivas)' : (id.includes('@') ? id.split('@')[0] : 'ರೈತ ' + id.slice(-4));
-    
+
     currentUser = { name: name, phone: id, language: currentLanguage };
     isLoggedIn = true;
     localStorage.setItem('krushi_user', JSON.stringify(currentUser));
     localStorage.setItem('krushi_is_logged_in', 'true');
-    
+
     updateUserAndFarmDisplay();
     updateScreenVisibility();
+  }
+
+  formLogin?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    doLogin();
+  });
+
+  // Backup: direct button click handler (in case form submit has issues)
+  document.getElementById('btnDoLogin')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    doLogin();
   });
 
   // ── AUTH SUBMIT: SIGN UP WITH FARM PROFILE ──
@@ -657,16 +667,37 @@ document.addEventListener('DOMContentLoaded', () => {
     speakDiagnosisResult();
   });
 
-  // Voice Assistant
+  // ── VOICE ASSISTANT EVENT LISTENERS ──
   document.getElementById('btnStartVoiceInput')?.addEventListener('click', () => {
     toggleVoiceRecognition();
   });
 
-  document.querySelectorAll('.btn-prompt').forEach(pBtn => {
-    pBtn.addEventListener('click', () => {
-      const query = pBtn.getAttribute('data-query');
+  const voiceTextInput = document.getElementById('voiceTextInput');
+  const btnSendVoiceText = document.getElementById('btnSendVoiceText');
+
+  function submitVoiceText() {
+    const q = voiceTextInput?.value.trim();
+    if (q) {
+      handleVoiceQuery(q);
+      if (voiceTextInput) voiceTextInput.value = '';
+    }
+  }
+
+  btnSendVoiceText?.addEventListener('click', submitVoiceText);
+  voiceTextInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submitVoiceText();
+    }
+  });
+
+  // Delegated click listener for all quick topic prompt chips
+  document.addEventListener('click', (e) => {
+    const pBtn = e.target.closest('.btn-prompt');
+    if (pBtn) {
+      const query = pBtn.getAttribute('data-query') || pBtn.textContent.trim();
       if (query) handleVoiceQuery(query);
-    });
+    }
   });
 
   // Mandi Search
@@ -1277,49 +1308,78 @@ function showScannedPreview(dataUrl) {
   if (preview) {
     preview.src = dataUrl;
     preview.style.display = 'block';
+  }
+}
+
 // ── COMPREHENSIVE INTELLIGENT REAL AI VOICE ASSISTANT ENGINE ──
 function toggleVoiceRecognition() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    handleVoiceQuery(currentLanguage === 'kn' ? "ರಾಗಿ ಬೆಳೆಗೆ ಯಾವ ಗೊಬ್ಬರ ಹಾಕಬೇಕು?" : (currentLanguage === 'hi' ? "फसल के लिए कौन सी खाद अच्छी है?" : "What fertilizer is best for crop?"));
-    return;
-  }
-
-  const recognition = new SpeechRecognition();
-  recognition.lang = (currentLanguage === 'kn') ? 'kn-IN' : ((currentLanguage === 'hi') ? 'hi-IN' : 'en-IN');
-  recognition.interimResults = false;
-
+  const micBtn = document.getElementById('btnStartVoiceInput');
   const micIcon = document.getElementById('micIcon');
   const micStatus = document.getElementById('micStatusLabel');
   const t = i18n[currentLanguage] || i18n.kn;
 
-  recognition.onstart = () => {
-    isListeningSpeech = true;
-    if (micIcon) micIcon.style.color = '#C62828';
-    if (micStatus) micStatus.textContent = t.micStatusListening;
-  };
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    if (micStatus) micStatus.textContent = (currentLanguage === 'kn') ? "ಧ್ವನಿ ಲಭ್ಯವಿಲ್ಲ - ಟೈಪ್ ಮಾಡಿ ಅಥವಾ ಕೆಳಗಿನ ಆಯ್ಕೆ ಒತ್ತಿ" : "Speech unavailable - please type or tap topic";
+    const sampleQuery = (currentLanguage === 'kn') ? "ರಾಗಿ ಬೆಳೆಗೆ ಯಾವ ಗೊಬ್ಬರ ಹಾಕಬೇಕು?" : ((currentLanguage === 'hi') ? "फसल के लिए कौन सी खाद अच्छी है?" : "What fertilizer is best for my crop?");
+    handleVoiceQuery(sampleQuery);
+    return;
+  }
 
-  recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript;
-    handleVoiceQuery(transcript);
-  };
+  if (isListeningSpeech) {
+    return;
+  }
 
-  recognition.onend = () => {
+  try {
+    const recognition = new SpeechRecognition();
+    recognition.lang = (currentLanguage === 'kn') ? 'kn-IN' : ((currentLanguage === 'hi') ? 'hi-IN' : 'en-IN');
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      isListeningSpeech = true;
+      if (micBtn) micBtn.classList.add('listening');
+      if (micIcon) micIcon.style.color = '#fff';
+      if (micStatus) micStatus.textContent = t.micStatusListening || "ಆಲಿಸಲಾಗುತ್ತಿದೆ... ಮಾತನಾಡಿ (Listening...)";
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      if (transcript && transcript.trim()) {
+        handleVoiceQuery(transcript.trim());
+      }
+    };
+
+    recognition.onend = () => {
+      isListeningSpeech = false;
+      if (micBtn) micBtn.classList.remove('listening');
+      if (micIcon) micIcon.style.color = '#fff';
+      if (micStatus) micStatus.textContent = t.micStatusTap || "ಮಾತನಾಡಲು ಮೈಕ್ ಒತ್ತಿ (Tap to Speak)";
+    };
+
+    recognition.onerror = (e) => {
+      console.warn("Speech error:", e.error);
+      isListeningSpeech = false;
+      if (micBtn) micBtn.classList.remove('listening');
+      if (micIcon) micIcon.style.color = '#fff';
+      if (micStatus) micStatus.textContent = t.micStatusTap || "ಮಾತನಾಡಲು ಮೈಕ್ ಒತ್ತಿ (Tap to Speak)";
+      
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        const sampleQuery = (currentLanguage === 'kn') ? "ರಾಗಿ ಬೆಳೆಗೆ ಯಾವ ಗೊಬ್ಬರ ಹಾಕಬೇಕು?" : "What fertilizer is best for my crop?";
+        handleVoiceQuery(sampleQuery);
+      }
+    };
+
+    recognition.start();
+  } catch (err) {
+    console.warn("Speech start exception:", err);
     isListeningSpeech = false;
-    if (micIcon) micIcon.style.color = 'inherit';
-    if (micStatus) micStatus.textContent = t.micStatusTap;
-  };
-
-  recognition.onerror = () => {
-    isListeningSpeech = false;
-    if (micIcon) micIcon.style.color = 'inherit';
-    if (micStatus) micStatus.textContent = t.micStatusTap;
-  };
-
-  recognition.start();
+    if (micBtn) micBtn.classList.remove('listening');
+  }
 }
 
 async function handleVoiceQuery(userText) {
+  if (!userText || !userText.trim()) return;
   const chatHistory = document.getElementById('chatHistory');
   if (!chatHistory) return;
 
@@ -1355,49 +1415,6 @@ async function handleVoiceQuery(userText) {
   speakUtterance(replyText, currentLanguage);
 }
 
-// ── GOOGLE GEMINI FLASH AI INTEGRATION ──
-async function callGeminiAiService(promptText, lang, cropName, areaVal, villageVal) {
-  try {
-    const langName = (lang === 'kn') ? 'Kannada (ಕನ್ನಡ)' : ((lang === 'hi') ? 'Hindi (हिन्दी)' : 'English');
-    const systemPrompt = `You are KrushiEdge AI, an expert Indian agronomist assistant helping a farmer with a ${areaVal}-acre ${cropName} crop in ${villageVal}, Karnataka.
-Answer the farmer's question with precise, practical, helpful agricultural guidance in 2 to 3 sentences strictly in ${langName}. Do not use bullet points or markdown headings. Keep it natural, conversational, and direct.`;
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4500);
-
-    // Free Gemini-compatible endpoint
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
-      body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: `${systemPrompt}\n\nFarmer Question: ${promptText}` }]
-          }
-        ],
-        generationConfig: {
-          maxOutputTokens: 200,
-          temperature: 0.3
-        }
-      })
-    });
-
-    clearTimeout(timeoutId);
-    if (response.ok) {
-      const data = await response.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (text && text.trim().length > 10) {
-        return text.trim();
-      }
-    }
-  } catch (err) {
-    console.log("Gemini direct endpoint fallback active:", err.message);
-  }
-  return null;
-}
-
 async function generateSmartAgriResponse(query) {
   const q = query.toLowerCase();
   const lang = currentLanguage || 'kn';
@@ -1406,12 +1423,6 @@ async function generateSmartAgriResponse(query) {
   const area = parseFloat(currentFarm.area) || 2.5;
   const village = (currentFarm.village || 'ಮಂಡ್ಯ').split(' ')[0];
   const farmerName = (currentUser.name || 'ಶ್ರೀನಿವಾಸ್').split(' ')[0];
-
-  // Try live Gemini AI Cloud first
-  const geminiAnswer = await callGeminiAiService(query, lang, cName, area, village);
-  if (geminiAnswer) {
-    return geminiAnswer;
-  }
 
   // 1. FERTILIZERS / NUTRITION / MANURE (ಗೊಬ್ಬರ, ಯೂರಿಯಾ, ಡಿಎಪಿ, NPK, खाद, Fertilizer, Compost)
   if (q.includes('ಗೊಬ್ಬರ') || q.includes('ಯೂರಿಯಾ') || q.includes('ಡಿಎಪಿ') || q.includes('ಪೋಷಕಾಂಶ') || q.includes('ಖಾದ್') || q.includes('खाद') || q.includes('उर्वरक') || q.includes('fertilizer') || q.includes('npk') || q.includes('dap') || q.includes('urea') || q.includes('zinc') || q.includes('potash')) {

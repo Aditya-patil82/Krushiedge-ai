@@ -843,11 +843,31 @@
                 <p class="mic-status-label" id="micStatusLabel">ಮಾತನಾಡಲು ಮೈಕ್ ಒತ್ತಿ (Tap to Speak)</p>
               </div>
 
-              <!-- Quick Voice Prompts -->
-              <div class="quick-prompts-row">
-                <button class="btn-prompt" data-query="ರಾಗಿ ಬೆಳೆಗೆ ಎಷ್ಟು ನೀರು ಬೇಕು?">💧 ನೀರಾವರಿ ಸಲಹೆ?</button>
-                <button class="btn-prompt" data-query="ಇಂದಿನ ರಾಗಿ ಮಂಡಿ ಬೆಲೆ ಎಷ್ಟು?">💰 ರಾಗಿ ಬೆಲೆ?</button>
-                <button class="btn-prompt" data-query="ಬ್ಲಾಸ್ಟ್ ರೋಗಕ್ಕೆ ಏನು ಔಷಧ?">🌿 ಬ್ಲಾಸ್ಟ್ ರೋಗ ಪರಿಹಾರ?</button>
+              <!-- Quick Voice Topic Chips -->
+              <div class="quick-prompts-row" id="voiceQuickChips">
+                <button class="btn-prompt" data-query="ರಾಗಿ ಬೆಳೆಗೆ ಯಾವ ಗೊಬ್ಬರ ಹಾಕಬೇಕು?">🌾 ಗೊಬ್ಬರ ಸಲಹೆ</button>
+                <button class="btn-prompt" data-query="ಬ್ಲಾಸ್ಟ್ ರೋಗಕ್ಕೆ ಏನು ಔಷಧ ಸಿಂಪಡಿಸಬೇಕು?">🐛 ರೋಗ & ಔಷಧ</button>
+                <button class="btn-prompt" data-query="ನನ್ನ ಹೊಲಕ್ಕೆ ನೀರು ಯಾವಾಗ ಹಾಯಿಸಬೇಕು?">💧 ನೀರಾವರಿ</button>
+                <button class="btn-prompt" data-query="ಇಂದಿನ ರಾಗಿ ಮತ್ತು ಭತ್ತದ ಮಂಡಿ ಬೆಲೆ ಎಷ್ಟು?">💰 ಮಂಡಿ ಬೆಲೆ</button>
+                <button class="btn-prompt" data-query="ರೈತರಿಗೆ ಸಿಗುವ ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು ಯಾವುವು?">📜 ಸರ್ಕಾರಿ ಯೋಜನೆ</button>
+              </div>
+
+              <!-- Voice & Text Input Controls -->
+              <div class="voice-input-composite">
+                <div class="voice-controls-bar">
+                  <button class="btn-mic-large" id="btnStartVoiceInput" title="ಮಾತನಾಡಲು ಒತ್ತಿ">
+                    <i class="fa-solid fa-microphone" id="micIcon"></i>
+                  </button>
+                  <p class="mic-status-label" id="micStatusLabel">ಮಾತನಾಡಲು ಮೈಕ್ ಒತ್ತಿ (Tap to Speak)</p>
+                </div>
+
+                <!-- Text Query Fallback / Typing Box -->
+                <div class="voice-text-form" id="voiceTextForm">
+                  <input type="text" id="voiceTextInput" placeholder="ಪ್ರಶ್ನೆ ಕೇಳಿ ಅಥವಾ ಟೈಪ್ ಮಾಡಿ (Ask question)..." autocomplete="off">
+                  <button type="button" id="btnSendVoiceText" class="btn-send-voice">
+                    <i class="fa-solid fa-paper-plane"></i>
+                  </button>
+                </div>
               </div>
             </div>
           </section>
@@ -1042,6 +1062,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=6.0"></script>
+  <script src="app.js?v=10.0"></script>
 </body>
 </html>
