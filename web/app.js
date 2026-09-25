@@ -389,18 +389,28 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── AUTH SUBMIT: LOGIN ──
-  formLogin?.addEventListener('submit', (e) => {
-    e.preventDefault();
+  function doLogin() {
     const id = document.getElementById('inputLoginIdentifier')?.value.trim() || '9845012345';
     const name = (id === '9845012345' || !id) ? 'ಶ್ರೀನಿವಾಸ್ ಗೌಡ (Srinivas)' : (id.includes('@') ? id.split('@')[0] : 'ರೈತ ' + id.slice(-4));
-    
+
     currentUser = { name: name, phone: id, language: currentLanguage };
     isLoggedIn = true;
     localStorage.setItem('krushi_user', JSON.stringify(currentUser));
     localStorage.setItem('krushi_is_logged_in', 'true');
-    
+
     updateUserAndFarmDisplay();
     updateScreenVisibility();
+  }
+
+  formLogin?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    doLogin();
+  });
+
+  // Backup: direct button click handler (in case form submit has issues)
+  document.getElementById('btnDoLogin')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    doLogin();
   });
 
   // ── AUTH SUBMIT: SIGN UP WITH FARM PROFILE ──
@@ -1363,10 +1373,11 @@ async function callGeminiAiService(promptText, lang, cropName, areaVal, villageV
 Answer the farmer's question with precise, practical, helpful agricultural guidance in 2 to 3 sentences strictly in ${langName}. Do not use bullet points or markdown headings. Keep it natural, conversational, and direct.`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4500);
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
 
-    // Free Gemini-compatible endpoint
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`, {
+    // Google Gemini Flash 1.5 - Free tier API
+    const GEMINI_KEY = 'AIzaSyD-9tSrke72I6QLOwmBsLnJVgIflIr3M9Y';
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
