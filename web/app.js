@@ -1287,6 +1287,9 @@ function showScannedPreview(dataUrl) {
   if (preview) {
     preview.src = dataUrl;
     preview.style.display = 'block';
+  }
+}
+
 // ── COMPREHENSIVE INTELLIGENT REAL AI VOICE ASSISTANT ENGINE ──
 function toggleVoiceRecognition() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
