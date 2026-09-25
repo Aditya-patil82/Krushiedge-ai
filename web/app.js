@@ -1368,47 +1368,28 @@ async function handleVoiceQuery(userText) {
   speakUtterance(replyText, currentLanguage);
 }
 
-// ── GOOGLE GEMINI FLASH AI INTEGRATION ──
-async function callGeminiAiService(promptText, lang, cropName, areaVal, villageVal) {
-  try {
-    const langName = (lang === 'kn') ? 'Kannada (ಕನ್ನಡ)' : ((lang === 'hi') ? 'Hindi (हिन्दी)' : 'English');
-    const systemPrompt = `You are KrushiEdge AI, an expert Indian agronomist assistant helping a farmer with a ${areaVal}-acre ${cropName} crop in ${villageVal}, Karnataka.
-Answer the farmer's question with precise, practical, helpful agricultural guidance in 2 to 3 sentences strictly in ${langName}. Do not use bullet points or markdown headings. Keep it natural, conversational, and direct.`;
+// ── REAL AI INTEGRATION (Puter.js Free LLM + Direct AI + Agronomy Engine) ──
+async function callRealAiService(promptText, lang, cropName, areaVal, villageVal) {
+  const langName = (lang === 'kn') ? 'Kannada (ಕನ್ನಡ)' : ((lang === 'hi') ? 'Hindi (हिन्दी)' : 'English');
+  const systemPrompt = `You are KrushiEdge AI, an expert Indian agricultural scientist assisting a farmer with ${areaVal} acres of ${cropName} in ${villageVal}, Karnataka.
+Answer the farmer's question with precise, actionable, practical advice strictly in 2 to 3 concise sentences in ${langName}. Do not use markdown bullet points or bold symbols. Speak warmly and directly.`;
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-    // Google Gemini Flash 1.5 - Free tier API
-    const GEMINI_KEY = 'AIzaSyD-9tSrke72I6QLOwmBsLnJVgIflIr3M9Y';
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
-      body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: `${systemPrompt}\n\nFarmer Question: ${promptText}` }]
-          }
-        ],
-        generationConfig: {
-          maxOutputTokens: 200,
-          temperature: 0.3
-        }
-      })
-    });
-
-    clearTimeout(timeoutId);
-    if (response.ok) {
-      const data = await response.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (text && text.trim().length > 10) {
-        return text.trim();
+  // 1. Try Puter.js Free AI (GPT-4o-mini / Claude in browser, no key needed)
+  if (typeof window.puter !== 'undefined' && window.puter.ai && typeof window.puter.ai.chat === 'function') {
+    try {
+      const fullPrompt = `${systemPrompt}\n\nFarmer's Query: "${promptText}"`;
+      const chatPromise = window.puter.ai.chat(fullPrompt);
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5500));
+      const res = await Promise.race([chatPromise, timeoutPromise]);
+      const resText = (typeof res === 'string') ? res : (res?.message?.content || res?.text || '');
+      if (resText && resText.trim().length > 10) {
+        return resText.trim();
       }
+    } catch (err) {
+      console.log("Puter AI:", err.message);
     }
-  } catch (err) {
-    console.log("Gemini direct endpoint fallback active:", err.message);
   }
+
   return null;
 }
 
@@ -1421,10 +1402,14 @@ async function generateSmartAgriResponse(query) {
   const village = (currentFarm.village || 'ಮಂಡ್ಯ').split(' ')[0];
   const farmerName = (currentUser.name || 'ಶ್ರೀನಿವಾಸ್').split(' ')[0];
 
-  // Try live Gemini AI Cloud first
-  const geminiAnswer = await callGeminiAiService(query, lang, cName, area, village);
-  if (geminiAnswer) {
-    return geminiAnswer;
+  // Try live real AI first
+  try {
+    const realAiAnswer = await callRealAiService(query, lang, cName, area, village);
+    if (realAiAnswer) {
+      return realAiAnswer;
+    }
+  } catch (e) {
+    console.log("Live AI fallback triggered:", e);
   }
 
   // 1. FERTILIZERS / NUTRITION / MANURE (ಗೊಬ್ಬರ, ಯೂರಿಯಾ, ಡಿಎಪಿ, NPK, खाद, Fertilizer, Compost)
