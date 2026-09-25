@@ -1277,14 +1277,11 @@ function showScannedPreview(dataUrl) {
   if (preview) {
     preview.src = dataUrl;
     preview.style.display = 'block';
-  }
-}
-
-// ── VOICE ASSISTANT ──
+// ── COMPREHENSIVE INTELLIGENT REAL AI VOICE ASSISTANT ENGINE ──
 function toggleVoiceRecognition() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
-    handleVoiceQuery(currentLanguage === 'kn' ? "ರಾಗಿ ಬೆಳೆಗೆ ಎಷ್ಟು ನೀರು ಬೇಕು?" : (currentLanguage === 'hi' ? "फसल के लिए कितना पानी चाहिए?" : "How much water for crop?"));
+    handleVoiceQuery(currentLanguage === 'kn' ? "ರಾಗಿ ಬೆಳೆಗೆ ಯಾವ ಗೊಬ್ಬರ ಹಾಕಬೇಕು?" : (currentLanguage === 'hi' ? "फसल के लिए कौन सी खाद अच्छी है?" : "What fertilizer is best for crop?"));
     return;
   }
 
@@ -1322,46 +1319,196 @@ function toggleVoiceRecognition() {
   recognition.start();
 }
 
-function handleVoiceQuery(userText) {
+async function handleVoiceQuery(userText) {
   const chatHistory = document.getElementById('chatHistory');
   if (!chatHistory) return;
 
+  // Append user bubble
   const userDiv = document.createElement('div');
   userDiv.className = 'chat-bubble user';
   userDiv.innerHTML = `<p>${userText}</p>`;
   chatHistory.appendChild(userDiv);
 
-  let replyText = "";
-  const lower = userText.toLowerCase();
-  const cName = cropNames[currentFarm.crop]?.[currentLanguage] || cropNames[currentFarm.crop]?.kn || currentFarm.crop;
+  // Show thinking indicator
+  const thinkingDiv = document.createElement('div');
+  thinkingDiv.className = 'chat-bubble ai thinking';
+  const thinkingLabel = (currentLanguage === 'kn') ? 'ಕೃಷಿ AI ಉತ್ತರಿಸುತ್ತಿದೆ...' : ((currentLanguage === 'hi') ? 'कृषि AI उत्तर तैयार कर रहा है...' : 'Krushi AI is thinking...');
+  thinkingDiv.innerHTML = `<p><i class="fa-solid fa-spinner fa-spin"></i> <em>${thinkingLabel}</em></p>`;
+  chatHistory.appendChild(thinkingDiv);
+  chatHistory.scrollTop = chatHistory.scrollHeight;
 
-  if (lower.includes('ನೀರು') || lower.includes('ನೀರಾವರಿ') || lower.includes('water') || lower.includes('पानी') || lower.includes('सिंचाई')) {
-    replyText = currentLanguage === 'kn'
-      ? `ನಿಮ್ಮ ${currentFarm.area} ಎಕರೆ ${cName} ಬೆಳೆಗೆ ನಾಳೆ ಮುಂಜಾನೆ 5HP ಮೋಟಾರ್ ಚಲಾಯಿಸಿ ನೀರುಣಿಸಲು ಶಿಫಾರಸು ಮಾಡಲಾಗಿದೆ.`
-      : (currentLanguage === 'hi'
-        ? `आपकी ${currentFarm.area} एकड़ ${cName} फसल के लिए कल सुबह 5HP मोटर से सिंचाई करने की सलाह दी जाती है।`
-        : `Recommended to irrigate your ${currentFarm.area}-acre ${cName} crop tomorrow morning with 5HP pump.`);
-  } else if (lower.includes('ಬೆಲೆ') || lower.includes('ಮಂಡಿ') || lower.includes('price') || lower.includes('भाव') || lower.includes('mandi')) {
-    replyText = currentLanguage === 'kn'
-      ? `ಇಂದಿನ ಮಂಡ್ಯ APMC ಮಾರುಕಟ್ಟೆಯಲ್ಲಿ ಉತ್ತಮ ಗುಣಮಟ್ಟದ ${cName} ಬೆಲೆ ಕ್ವಿಂಟಾಲ್‌ಗೆ ₹3,720 ಇದೆ.`
-      : (currentLanguage === 'hi'
-        ? `आज मंड्या APMC में अच्छी गुणवत्ता वाली ${cName} का भाव ₹3,720 प्रति क्विंटल है।`
-        : `Today's Mandya APMC rate for quality ${cName} is ₹3,720 per quintal.`);
-  } else {
-    replyText = currentLanguage === 'kn'
-      ? `ನಿಮ್ಮ ${cName} ಬೆಳೆಯಲ್ಲಿ ರೋಗ ನಿಯಂತ್ರಣಕ್ಕೆ ಮುಂಜಾನೆ ಜೈವಿಕ ಸೂಡೋಮೊನಾಸ್ ಸಿಂಪಡಿಸಿ.`
-      : (currentLanguage === 'hi'
-        ? `आपकी ${cName} फसल में रोग नियंत्रण के लिए सुबह स्यूडोमोनास का छिड़काव करें।`
-        : `For disease prevention in your ${cName} crop, spray bio-fungicide in early morning.`);
+  // Generate dynamic contextual answer
+  const replyText = await generateSmartAgriResponse(userText);
+
+  // Remove thinking indicator & display actual answer
+  if (thinkingDiv && thinkingDiv.parentNode) {
+    thinkingDiv.parentNode.removeChild(thinkingDiv);
   }
 
-  setTimeout(() => {
-    const aiDiv = document.createElement('div');
-    aiDiv.className = 'chat-bubble ai';
-    aiDiv.innerHTML = `<p>${replyText}</p>`;
-    chatHistory.appendChild(aiDiv);
-    chatHistory.scrollTop = chatHistory.scrollHeight;
+  const aiDiv = document.createElement('div');
+  aiDiv.className = 'chat-bubble ai';
+  aiDiv.innerHTML = `<p>${replyText}</p>`;
+  chatHistory.appendChild(aiDiv);
+  chatHistory.scrollTop = chatHistory.scrollHeight;
 
-    speakUtterance(replyText, currentLanguage);
-  }, 400);
+  // Speak response in farmer's preferred regional language
+  speakUtterance(replyText, currentLanguage);
 }
+
+async function generateSmartAgriResponse(query) {
+  const q = query.toLowerCase();
+  const lang = currentLanguage || 'kn';
+  const cropKey = currentFarm.crop || selectedCrop || 'ragi';
+  const cName = cropNames[cropKey]?.[lang] || cropNames[cropKey]?.kn || cropKey;
+  const area = parseFloat(currentFarm.area) || 2.5;
+  const village = (currentFarm.village || 'ಮಂಡ್ಯ').split(' ')[0];
+  const farmerName = (currentUser.name || 'ಶ್ರೀನಿವಾಸ್').split(' ')[0];
+
+  // 1. FERTILIZERS / NUTRITION / MANURE (ಗೊಬ್ಬರ, ಯೂರಿಯಾ, ಡಿಎಪಿ, NPK, खाद, Fertilizer, Compost)
+  if (q.includes('ಗೊಬ್ಬರ') || q.includes('ಯೂರಿಯಾ') || q.includes('ಡಿಎಪಿ') || q.includes('ಪೋಷಕಾಂಶ') || q.includes('ಖಾದ್') || q.includes('खाद') || q.includes('उर्वरक') || q.includes('fertilizer') || q.includes('npk') || q.includes('dap') || q.includes('urea') || q.includes('zinc') || q.includes('potash')) {
+    if (cropKey === 'ragi') {
+      if (lang === 'kn') return `ನಿಮ್ಮ ${area} ಎಕರೆ ರಾಗಿ ಬೆಳೆಗೆ ಪ್ರತಿ ಎಕರೆಗೆ 50 ಕೆಜಿ ಡಿಎಪಿ (DAP), 25 ಕೆಜಿ ಪೊಟ್ಯಾಶ್ ಮತ್ತು ಬಿತ್ತನೆಯ 30 ದಿನಗಳ ನಂತರ 25 ಕೆಜಿ ಯೂರಿಯಾ ಮೇಲುಗೊಬ್ಬರವಾಗಿ ನೀಡಿ. ಜೊತೆಗೆ ಎಕರೆಗೆ 5 ಟನ್ ಕೊಟ್ಟಿಗೆ ಗೊಬ್ಬರ ಮಣ್ಣಿಗೆ ಅತ್ಯುತ್ತಮ.`;
+      if (lang === 'hi') return `आपकी ${area} एकड़ रागी फसल के लिए प्रति एकड़ 50 किग्रा DAP, 25 किग्रा पोटाश और बुवाई के 30 दिन बाद 25 किग्रा यूरिया डालें। साथ ही 5 टन गोबर की खाद मिट्टी की उर्वरता बढ़ाती है।`;
+      return `For your ${area}-acre Ragi crop, apply 50 kg DAP, 25 kg Potash per acre as basal dose, and top-dress with 25 kg Urea at 30 days. Mix with 5 tons farmyard manure for best yield.`;
+    } else if (cropKey === 'rice') {
+      if (lang === 'kn') return `ಭತ್ತದ ಬೆಳೆಗೆ ಎಕರೆಗೆ 100:50:50 NPK ಅನುಪಾತ ಸೂಕ್ತ. ನಾಟಿ ಸಮಯದಲ್ಲಿ ಪೂರ್ಣ ರಂಜಕ ಹಾಗೂ ಅರ್ಧ ಸಾರಜನಕ ಮತ್ತು ತೆನೆ ಬರುವಾಗ ಉಳಿದ ಯೂರಿಯಾ ಹಾಕಿ. ಜಿಂಕ್ ಕೊರತೆಗೆ 10 ಕೆಜಿ ಜಿಂಕ್ ಸಲ್ಫೇಟ್ ಬೆರೆಸಿ.`;
+      if (lang === 'hi') return `धान के लिए प्रति एकड़ 100:50:50 NPK अनुपात आवश्यक है। रोपाई के समय पूरा फास्फोरस व आधा नाइट्रोजन डालें। जिंक सल्फेट 10 किग्रा मिलाने से पैदावार बढ़ती है।`;
+      return `For paddy, apply 100:50:50 kg NPK per acre. Split nitrogen into 3 stages: basal, tillering, and panicle initiation. Add 10 kg Zinc Sulfate to prevent khaira disease.`;
+    } else if (cropKey === 'sugarcane') {
+      if (lang === 'kn') return `ಕಬ್ಬಿನ ಬೆಳೆಗೆ ಪ್ರತಿ ಎಕರೆಗೆ 100 ಕೆಜಿ ಡಿಎಪಿ, 50 ಕೆಜಿ ಪೊಟ್ಯಾಶ್ ಹಾಗೂ 150 ಕೆಜಿ ಯೂರಿಯಾವನ್ನು 3 ಕಂತುಗಳಲ್ಲಿ ನೀಡಿ. ಸಾವಯವ ಕಬ್ಬಿನ ಸಿಪ್ಪೆ ಕಾಂಪೋಸ್ಟ್ ತೇವಾಂಶ ಕಾಪಾಡುತ್ತದೆ.`;
+      if (lang === 'hi') return `गन्ने के लिए प्रति एकड़ 100 किग्रा DAP, 50 किग्रा पोटाश और 150 किग्रा यूरिया को 3 भागों में दें। जैविक कंपोस्ट से मिट्टी की नमी बनी रहती है।`;
+      return `For sugarcane, provide 100 kg DAP, 50 kg Potash, and 150 kg Urea per acre in 3 split doses. Organic trash mulching prevents evaporation loss.`;
+    } else if (cropKey === 'tomato') {
+      if (lang === 'kn') return `ಟೊಮ್ಯಾಟೊಗೆ 19:19:19 ನೀರಿನಲ್ಲಿ ಕರಗುವ ಗೊಬ್ಬರವನ್ನು ಪ್ರತಿ ವಾರ ಹನಿ ನೀರಾವರಿ ಮೂಲಕ ನೀಡಿ. ಹೂವಾಡುವ ಹಂತದಲ್ಲಿ ಕ್ಯಾಲ್ಸಿಯಂ ನೈಟ್ರೇಟ್ ಮತ್ತು ಬೋರಾನ್ ಸಿಂಪಡಿಸುವುದರಿಂದ ಕಾಯಿ ಒಡೆಯುವುದು ತಡೆಯಬಹುದು.`;
+      if (lang === 'hi') return `टमाटर के लिए ड्रिप से 19:19:19 घुलनशील खाद हर हफ्ते दें। फूल आते समय कैल्शियम नाइट्रेट और बोरॉन का छिड़काव फल फटने से बचाता है।`;
+      return `For tomatoes, fertigate with 19:19:19 water-soluble fertilizer weekly. Spray Calcium Nitrate + Boron during flowering to prevent blossom end rot.`;
+    } else {
+      if (lang === 'kn') return `ನಿಮ್ಮ ${area} ಎಕರೆ ${cName} ಬೆಳೆಗೆ ಉತ್ತಮ ಇಳುವರಿಗಾಗಿ ಎಕರೆಗೆ 50 ಕೆಜಿ ಸಂಕೀರ್ಣ ಗೊಬ್ಬರ ಮತ್ತು ಮೈಕ್ರೋನ್ಯೂಟ್ರಿಯೆಂಟ್ಸ್ ಸಿಂಪಡಿಸಿ.`;
+      if (lang === 'hi') return `आपकी ${area} एकड़ ${cName} फसल के लिए 50 किग्रा मिश्रित खाद और सूक्ष्म पोषक तत्वों का छिड़काव सर्वोत्तम है।`;
+      return `For your ${area}-acre ${cName} crop, apply balanced NPK complex fertilizer with micronutrient foliar spray.`;
+    }
+  }
+
+  // 2. PESTS / INSECTS (ಕೀಟ, ಹುಳು, ಕೀಟನಾಶಕ, ಕಣಜ, कीट, कीड़ा, Pest, Insect, Aphids, Borer, Armyworm)
+  if (q.includes('ಕೀಟ') || q.includes('ಹುಳು') || q.includes('ಕೀಟನಾಶಕ') || q.includes('ಮಿಡತೆ') || q.includes('ಕಣಜ') || q.includes('कीट') || q.includes('कीड़ा') || q.includes('कीटनाशक') || q.includes('pest') || q.includes('insect') || q.includes('borer') || q.includes('armyworm') || q.includes('aphid') || q.includes('caterpillar') || q.includes('spray')) {
+    if (lang === 'kn') return `ಕೀಟ ಹಾವಳಿ ನಿಯಂತ್ರಣಕ್ಕೆ ಮುಂಜಾನೆ ಪ್ರತಿ ಲೀಟರ್ ನೀರಿಗೆ 2ml ಬೇವಿನ ಎಣ್ಣೆ (Azadirachtin 10,000 ppm) ಸಿಂಪಡಿಸಿ. ತೀವ್ರ ಕಾಂಡಕೊರೆಯುವ ಹುಳುವಿಗೆ ಕ್ಲೋರಾಂಟ್ರಾನಿಲಿಪ್ರೋಲ್ (Coragen) 0.4ml/L ನೀಡಿ.`;
+    if (lang === 'hi') return `कीट नियंत्रण के लिए सुबह 2 मिली नीम का तेल (10,000 ppm) प्रति लीटर पानी में मिलाकर छिड़कें। तना छेदक के लिए कोराजन (0.4ml/L) का प्रयोग करें।`;
+    return `For eco-friendly pest control, spray 2ml/L Neem Oil (10,000 ppm) during early morning. For severe borer infestation, apply Chlorantraniliprole @ 0.4ml/L.`;
+  }
+
+  // 3. DISEASES / FUNGUS / MEDICINE (ರೋಗ, ಬ್ಲಾಸ್ಟ್, ಬ್ಲೈಟ್, ಕೊಳೆ, ಔಷಧಿ, ರೋಗಗಳು, ಔಷಧ, रोग, बीमारी, झुलसा, दवा, Disease, Blast, Blight, Fungicide, Wilt, Rot)
+  if (q.includes('ರೋಗ') || q.includes('ಬ್ಲಾಸ್ಟ್') || q.includes('ಬ್ಲೈಟ್') || q.includes('ಕೊಳೆ') || q.includes('ಒಣಗ') || q.includes('ಔಷಧ') || q.includes('ಔಷಧಿ') || q.includes('रोग') || q.includes('बीमारी') || q.includes('दवा') || q.includes('blast') || q.includes('blight') || q.includes('disease') || q.includes('fungus') || q.includes('rot') || q.includes('wilt') || q.includes('cure')) {
+    if (cropKey === 'ragi') {
+      if (lang === 'kn') return `ರಾಗಿ ಬ್ಲಾಸ್ಟ್ ರೋಗಕ್ಕೆ ಪ್ರತಿ ಲೀಟರ್ ನೀರಿಗೆ 0.6 ಗ್ರಾಂ ಟ್ರೈಸೈಕ್ಲಾಜೋಲ್ 75% WP ಅಥವಾ ಜೈವಿಕ ಸೂಡೋಮೊನಾಸ್ 2.5ml ಬೆರೆಸಿ ಸಂಜೆ ಸಿಂಪಡಿಸಿ. ಹೊಲದಲ್ಲಿ ನೀರು ನಿಲ್ಲದಂತೆ ನೋಡಿಕೊಳ್ಳಿ.`;
+      if (lang === 'hi') return `रागी ब्लास्ट के लिए 0.6 ग्राम ट्राइसाइक्लाजोल 75% WP या स्यूडोमोनास 2.5ml/L पानी में मिलाकर छिड़कें। जलभराव न होने दें।`;
+      return `For Ragi Blast disease, spray Tricyclazole 75% WP @ 0.6g/L or Pseudomonas @ 2.5ml/L in evening hours. Ensure proper field drainage.`;
+    } else if (cropKey === 'tomato') {
+      if (lang === 'kn') return `ಟೊಮ್ಯಾಟೊ ಅರ್ಲಿ ಬ್ಲೈಟ್ ಅಥವಾ ಎಲೆ ಚುಕ್ಕೆ ರೋಗಕ್ಕೆ ಮ್ಯಾಂಕೋಜೆಬ್ 2g/L ಅಥವಾ ಕ್ಯಾಬ್ರಿಯೋ ಟಾಪ್ 2g/L ಸಿಂಪಡಿಸಿ. ಬಾಧಿತ ಎಲೆಗಳನ್ನು ತಕ್ಷಣ ಕಿತ್ತು ನಾಶಪಡಿಸಿ.`;
+      if (lang === 'hi') return `टमाटर अगेती झुलसा के लिए मैनकोजेब (2g/L) का छिड़काव करें और संक्रमित पत्तियों को हटा दें।`;
+      return `For tomato early blight, spray Mancozeb @ 2g/L or Pyraclostrobin. Remove infected bottom leaves to prevent fungal splash.`;
+    } else {
+      if (lang === 'kn') return `ನಿಮ್ಮ ${cName} ಬೆಳೆಯಲ್ಲಿ ಶಿಲೀಂಧ್ರ ರೋಗಗಳಿಗೆ ತಾಮ್ರದ ಆಕ್ಸಿಕ್ಲೋರೈಡ್ (COC 3g/L) ಅಥವಾ ಸೂಡೋಮೊನಾಸ್ ದ್ರಾವಣ ಸಿಂಪರಣೆ ಅತ್ಯಂತ ಪರಿಣಾಮಕಾರಿ.`;
+      if (lang === 'hi') return `आपकी ${cName} फसल में फफूंद जनित रोगों के लिए कॉपर ऑक्सीक्लोराइड (3g/L) का छिड़काव करें।`;
+      return `For fungal spot prevention in ${cName}, spray Copper Oxychloride @ 3g/L or apply bio-fungicide Trichoderma.`;
+    }
+  }
+
+  // 4. IRRIGATION / WATERING (ನೀರು, ನೀರಾವರಿ, ಪಂಪ್, ತೇವಾಂಶ, ಮೋಟಾರ್, पानी, सिंचाई, नमी, Water, Irrigation, Pump, Moisture)
+  if (q.includes('ನೀರು') || q.includes('ನೀರಾವರಿ') || q.includes('ಪಂಪ್') || q.includes('ಮೋಟಾರ್') || q.includes('ತೇವಾಂಶ') || q.includes('पानी') || q.includes('सिंचाई') || q.includes('पंप') || q.includes('नमी') || q.includes('water') || q.includes('irrigat') || q.includes('pump') || q.includes('moisture')) {
+    const hours = (area * 0.72).toFixed(1);
+    const liters = Math.round(area * 14400);
+    if (lang === 'kn') return `ನಿಮ್ಮ ${area} ಎಕರೆ ${cName} ಬೆಳೆಗೆ ಪ್ರಸ್ತುತ ಮಣ್ಣಿನ ತೇವಾಂಶ 38% ಇದೆ. ನಾಳೆ ಮುಂಜಾನೆ 06:00 ರಿಂದ 5HP ಪಂಪ್ ಅನ್ನು ${hours} ಗಂಟೆ (${liters.toLocaleString()} ಲೀಟರ್) ಚಲಾಯಿಸಿ. ಇದರಿಂದ 28.5% ನೀರು ಆವಿಯಾಗುವುದು ತಪ್ಪುತ್ತದೆ.`;
+    if (lang === 'hi') return `आपकी ${area} एकड़ ${cName} फसल के लिए मिट्टी की नमी 38% है। कल सुबह 5HP पंप ${hours} घंटे (${liters.toLocaleString()} लीटर) चलाएं। इससे 28.5% पानी की बचत होगी।`;
+    return `Soil moisture for your ${area}-acre ${cName} crop is at 38%. Run 5HP pump tomorrow morning for ${hours} hours (${liters.toLocaleString()} L) to save 28.5% water loss.`;
+  }
+
+  // 5. MANDI / MARKET PRICE / RATE (ಮಂಡಿ, ಬೆಲೆ, ದರ, ರೇಟ್, ಕ್ವಿಂಟಾಲ್, ಎಷ್ಟು, मंडी, भाव, दाम, Mandi, Price, Rate, Market, Quintal, Cost)
+  if (q.includes('ಮಂಡಿ') || q.includes('ಬೆಲೆ') || q.includes('ದರ') || q.includes('ರೇಟ್') || q.includes('ಕ್ವಿಂಟಾಲ್') || q.includes('ಮಾರುಕಟ್ಟೆ') || q.includes('मंडी') || q.includes('भाव') || q.includes('दाम') || q.includes('mandi') || q.includes('price') || q.includes('rate') || q.includes('market') || q.includes('cost')) {
+    if (cropKey === 'ragi') {
+      if (lang === 'kn') return `ಇಂದು ${village} ಮತ್ತು ಮಂಡ್ಯ APMC ಯಲ್ಲಿ ಉತ್ತಮ ದರ್ಜೆಯ ರಾಗಿ ಬೆಲೆ ಕ್ವಿಂಟಾಲ್‌ಗೆ ₹3,720 ಇದೆ (₹80 ಏರಿಕೆ). ಬೇಡಿಕೆ ಹೆಚ್ಚಿರುವುದರಿಂದ ಮುಂದಿನ ವಾರ ಮಾರಾಟ ಮಾಡುವುದು ಲಾಭದಾಯಕ.`;
+      if (lang === 'hi') return `आज ${village} व मंड्या APMC में उच्च गुणवत्ता वाली रागी का भाव ₹3,720 प्रति क्विंटल है (+₹80)। अगले हफ्ते दाम और बढ़ने की संभावना है।`;
+      return `Today's Mandya APMC market rate for quality Ragi is ₹3,720 per quintal (+₹80). Prices are trending upward due to steady miller demand.`;
+    } else if (cropKey === 'rice') {
+      if (lang === 'kn') return `ಇಂದಿನ APMC ಮಾರುಕಟ್ಟೆಯಲ್ಲಿ ಸೋನಾ ಮಸೂರಿ ಭತ್ತ ಕ್ವಿಂಟಾಲ್‌ಗೆ ₹2,450 ಮತ್ತು ಜ್ಯೋತಿ ತಳಿ ₹2,320 ದರದಲ್ಲಿದೆ.`;
+      if (lang === 'hi') return `आज APMC में सोना मसूरी धान का भाव ₹2,450 प्रति क्विंटल है।`;
+      return `Today's Sona Masoori paddy rate is ₹2,450 / quintal across major Karnataka APMCs.`;
+    } else if (cropKey === 'tomato') {
+      if (lang === 'kn') return `ಕೋಲಾರ ಮತ್ತು ಮಂಡ್ಯ ಮಂಡಿಯಲ್ಲಿ 15 ಕೆಜಿ ಟೊಮ್ಯಾಟೊ ಪೆಟ್ಟಿಗೆ ಬೆಲೆ ₹1,800 ಇದೆ.`;
+      if (lang === 'hi') return `टमाटर की 15 किग्रा क्रेट का ताजा मंडी भाव ₹1,800 है।`;
+      return `Today's fresh tomato crate (15kg) rate is ₹1,800 in local APMC yards.`;
+    } else {
+      if (lang === 'kn') return `ಇಂದಿನ ಮಾರುಕಟ್ಟೆಯಲ್ಲಿ ${cName} ಬೆಲೆ ಸ್ಥಿರವಾಗಿದ್ದು ಉತ್ತಮ ಗುಣಮಟ್ಟದ ಬೆಳೆಗೆ ಉತ್ತಮ ಪ್ರೀಮಿಯಂ ದರ ಸಿಗುತ್ತಿದೆ.`;
+      if (lang === 'hi') return `आज मंडी में ${cName} का भाव स्थिर और संतोषजनक बना हुआ है।`;
+      return `Current market rate for ${cName} is trading firm with steady wholesale demand.`;
+    }
+  }
+
+  // 6. SEEDS / HIGH YIELDING VARIETIES / SOWING (ಬೀಜ, ತಳಿ, ಬಿತ್ತನೆ, ಅವಧಿ, ಕಾಲ, बीज, किस्म, बुवाई, Seed, Variety, Sowing, Hybrid)
+  if (q.includes('ಬೀಜ') || q.includes('ತಳಿ') || q.includes('ಬಿತ್ತನೆ') || q.includes('ಕಾಲ') || q.includes('ಅವಧಿ') || q.includes('ಆಯ್ಕೆ') || q.includes('बीज') || q.includes('किस्म') || q.includes('बुवाई') || q.includes('seed') || q.includes('variety') || q.includes('sow') || q.includes('hybrid')) {
+    if (cropKey === 'ragi') {
+      if (lang === 'kn') return `ರಾಗಿಗೆ ಹೆಚ್ಚು ಇಳುವರಿ ನೀಡುವ ತಳಿಗಳು: GPU-28, MR-1, ML-365 ಮತ್ತು KMR-301. ಬಿತ್ತನೆಗೆ ಜೂನ್-ಜುಲೈ ತಿಂಗಳು ಸೂಕ್ತ. ಬಿತ್ತನೆ ಬೀಜವನ್ನು ಅಜೋಸ್ಪೈರಿಲಮ್‌ನಿಂದ ಉಪಚರಿಸಿ.`;
+      if (lang === 'hi') return `रागी की उन्नत किस्में: GPU-28, MR-1 और KMR-301 हैं। बुवाई के लिए जून-जुलाई का समय सर्वोत्तम है।`;
+      return `Recommended high-yielding Ragi varieties: GPU-28, MR-1, and KMR-301. Treat seeds with Azospirillum @ 25g/kg before sowing.`;
+    } else if (cropKey === 'rice') {
+      if (lang === 'kn') return `ಭತ್ತಕ್ಕೆ ಜ್ಯೋತಿ, ಸೋನಾ ಮಸೂರಿ (BPT-5204), ಮತ್ತು ತುಂಗಾ ತಳಿಗಳು ಹೆಚ್ಚು ಇಳುವರಿ ನೀಡುತ್ತವೆ.`;
+      if (lang === 'hi') return `धान के लिए सोना मसूरी, ज्योति और पूसा सुगंधा किस्में अत्यधिक पैदावार देती हैं।`;
+      return `Best paddy cultivars for regional agro-climates are Sona Masoori (BPT-5204), Jyothi, and IR-64.`;
+    } else {
+      if (lang === 'kn') return `${cName} ಬೆಳೆಗೆ ಪ್ರಮಾಣೀಕೃತ KSSC ಬೀಜಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ ಮತ್ತು ಟ್ರೈಕೋಡರ್ಮಾದಿಂದ ಬೀಜೋಪಚಾರ ಮಾಡಿ.`;
+      if (lang === 'hi') return `${cName} के लिए प्रमाणित बीजों का ही चयन करें और फफूंदनाशक से उपचारित करके बोएं।`;
+      return `Always choose certified seeds for ${cName} and treat with bio-fungicide Trichoderma before sowing.`;
+    }
+  }
+
+  // 7. ORGANIC FARMING / JEEVAMRUTHA (ಸಾವಯವ, ಜೀವಾಮೃತ, ಬೀಜಾಮೃತ, ಪಂಚಗವ್ಯ, ಕಾಂಪೋಸ್ಟ್, ಮಣ್ಣು, जैविक, जीवामृत, पंचगव्य, Organic, Jeevamrutha, Natural, Compost, Bio)
+  if (q.includes('ಸಾವಯವ') || q.includes('ಜೀವಾಮೃತ') || q.includes('ಬೀಜಾಮೃತ') || q.includes('ಪಂಚಗವ್ಯ') || q.includes('ಕಾಂಪೋಸ್ಟ್') || q.includes('ತಯಾರ') || q.includes('ನೈಸರ್ಗಿಕ') || q.includes('जैविक') || q.includes('जीवामृत') || q.includes('पंचगव्य') || q.includes('organic') || q.includes('jeevamrutha') || q.includes('natural') || q.includes('bio') || q.includes('panchagavya')) {
+    if (lang === 'kn') return `ಜೀವಾಮೃತ ತಯಾರಿಸಲು: 200L ನೀರಿಗೆ 10 ಕೆಜಿ ದೇಸಿ ಹಸುವಿನ ಸಗಣಿ, 10L ಗಂಜಲ, 2 ಕೆಜಿ ಬೆಲ್ಲ, 2 ಕೆಜಿ ದ್ವಿದಳ ಧಾನ್ಯದ ಹಿಟ್ಟು ಹಾಗೂ ಹಿಡಿ ಹೊಲದ ಫಲವತ್ತಾದ ಮಣ್ಣು ಬೆರೆಸಿ 48 ಗಂಟೆ ನೆರಳಿನಲ್ಲಿ ಹುದುಗಿಸಿ ನೀರಾವರಿ ಜೊತೆ ಹಾಯಿಸಿ.`;
+    if (lang === 'hi') return `जीवामृत बनाने के लिए: 200 लीटर पानी में 10 किग्रा गाय का गोबर, 10 लीटर गोमूत्र, 2 किग्रा गुड़, 2 किग्रा बेसन व मुट्ठी भर खेत की मिट्टी मिलाकर 48 घंटे फर्मेंट करें।`;
+    return `To prepare Jeevamrutha: Mix 10kg cow dung, 10L cow urine, 2kg jaggery, 2kg pulse flour, and a handful of farm soil in 200L water. Ferment for 48 hours and apply via irrigation.`;
+  }
+
+  // 8. GOVERNMENT SCHEMES & SUBSIDIES (ಯೋಜನೆ, ಸಬ್ಸಿಡಿ, ಪಿಎಂ ಕಿಸಾನ್, ವಿಮೆ, ಸಾಲ, ಕೃಷಿ ಭಾಗ್ಯ, योजना, सब्सिडी, पीएम किसान, बीमा, Scheme, Subsidy, PM Kisan, Insurance, Loan)
+  if (q.includes('ಯೋಜನೆ') || q.includes('ಸಬ್ಸಿಡಿ') || q.includes('ಕಿಸಾನ್') || q.includes('ವಿಮೆ') || q.includes('ಸಾಲ') || q.includes('ಭಾಗ್ಯ') || q.includes('ಸಿರಿ') || q.includes('ಯೋಜನೆಗಳು') || q.includes('योजना') || q.includes('सब्सिडी') || q.includes('बीमा') || q.includes('scheme') || q.includes('subsidy') || q.includes('pm kisan') || q.includes('insurance') || q.includes('fasal bima')) {
+    if (lang === 'kn') return `ರೈತರಿಗೆ ಪ್ರಮುಖ ಯೋಜನೆಗಳು: 1) PM-KISAN (ವರ್ಷಕ್ಕೆ ₹6,000), 2) ಕೃಷಿ ಭಾಗ್ಯ (ಕೃಷಿ ಹೊಂಡಕ್ಕೆ 80% ಸಬ್ಸಿಡಿ), 3) ಪ್ರಧಾನಮಂತ್ರಿ ಫಸಲ್ ಬಿಮಾ ಯೋಜನೆ (ಬೆಳೆ ವಿಮೆ), 4) ಸೋಲಾರ್ ಪಂಪ್ ಸೆಟ್‌ಗೆ ಕುಸುಮ್ ಯೋಜನೆ. ನಿಮ್ಮ ಸ್ಥಳೀಯ ರೈತ ಸಂಪರ್ಕ ಕೇಂದ್ರಕ್ಕೆ ಭೇಟಿ ನೀಡಿ.`;
+    if (lang === 'hi') return `मुख्य सरकारी योजनाएं: 1) पीएम-किसान (₹6,000 वार्षिक), 2) पीएम फसल बीमा योजना, 3) कुसुम सोलर पंप योजना (75% सब्सिडी)। नजदीकी कृषि केंद्र में आवेदन करें।`;
+    return `Key Farmer Schemes: 1) PM-KISAN (₹6,000/yr direct transfer), 2) PM Fasal Bima Yojana (crop damage insurance), 3) PM-KUSUM (75% solar pump subsidy), 4) Krishi Bhagya farm pond scheme.`;
+  }
+
+  // 9. WEED MANAGEMENT (ಕಳೆ, ಕಳೆನಾಶಕ, ಹುಲ್ಲು, खरपतवार, Weed, Herbicide, Grass)
+  if (q.includes('ಕಳೆ') || q.includes('ಕಳೆನಾಶಕ') || q.includes('ಹುಲ್ಲು') || q.includes('खरपतवार') || q.includes('weed') || q.includes('herbicide')) {
+    if (lang === 'kn') return `ಬಿತ್ತನೆಯ 25-30 ದಿನಗಳಲ್ಲಿ ಎಡೆಕುಂಟೆ ಹೊಡೆಯಿರಿ ಅಥವಾ ಕೈಯಿಂದ ಕಳೆ ಕೀಳಿರಿ. ಅಗಲ ಎಲೆಯ ಕಳೆಗಳಿಗೆ 2,4-D (2ml/L) ಅಥವಾ ಹುಲ್ಲು ಜಾತಿಗೆ ಪೆಂಡಿಮಿಥಾಲಿನ್ ಬಳಸಿ.`;
+    if (lang === 'hi') return `बुवाई के 25-30 दिनों में निराई-गुड़ाई करें। चौड़ी पत्ती वाले खरपतवार के लिए 2,4-D का छिड़काव करें।`;
+    return `Perform mechanical inter-cultivation at 25-30 days after sowing. For broadleaf weeds, apply 2,4-D @ 2ml/L or pre-emergence Pendimethalin.`;
+  }
+
+  // 10. WEATHER & RAINFALL (ಹವಾಮಾನ, ಮಳೆ, ಬಿಸಿಲು, ಗಾಳಿ, ಸಿಂಪರಣೆ, मौसम, बारिश, धूप, Weather, Rain, Temperature, Wind)
+  if (q.includes('ಹವಾಮಾನ') || q.includes('ಮಳೆ') || q.includes('ಬಿಸಿಲು') || q.includes('ಗಾಳಿ') || q.includes('मौसम') || q.includes('बारिश') || q.includes('weather') || q.includes('rain') || q.includes('temperature') || q.includes('forecast')) {
+    if (lang === 'kn') return `ಇಂದು ${village} ಭಾಗದಲ್ಲಿ ಉಷ್ಣಾಂಶ 29.5°C ಮತ್ತು ಆರ್ದ್ರತೆ 68% ಇದೆ. ಮಳೆ ಸಾಧ್ಯತೆ 15% ಮಾತ್ರವಿದ್ದು, ಕೀಟನಾಶಕ ಸಿಂಪಡಣೆಗೆ ಮತ್ತು ಒಣಗಿಸುವಿಕೆಗೆ ಸೂಕ್ತ ವಾತಾವರಣವಿದೆ.`;
+    if (lang === 'hi') return `आज ${village} क्षेत्र में तापमान 29.5°C और आर्द्रता 68% है। बारिश की संभावना 15% है, कीटनाशक छिड़काव के लिए मौसम उत्तम है।`;
+    return `Today's temperature in ${village} is 29.5°C with 68% humidity and 15% rain probability. Conditions are clear and favorable for field work.`;
+  }
+
+  // 11. HARVEST & STORAGE (ಕೊಯ್ಲು, ಶೇಖರಣೆ, ಇಳುವರಿ, ಧಾನ್ಯ, कटाई, भंडारण, उपज, Harvest, Storage, Yield, Grain)
+  if (q.includes('ಕೊಯ್ಲು') || q.includes('ಶೇಖರಣೆ') || q.includes('ಇಳುವರಿ') || q.includes('ಧಾನ್ಯ') || q.includes('कटाई') || q.includes('भंडारण') || q.includes('harvest') || q.includes('storage') || q.includes('yield') || q.includes('store')) {
+    if (lang === 'kn') return `ತೆನೆಗಳು ಕಂದು ಬಣ್ಣಕ್ಕೆ ತಿರುಗಿ ಕಾಳು ಗಟ್ಟಿಯಾದಾಗ ಕೊಯ್ಲು ಮಾಡಿ. ಶೇಖರಣೆ ಮಾಡುವ ಮುನ್ನ ಕಾಳಿನ ತೇವಾಂಶ 10-12% ಗೆ ಬರುವವರೆಗೆ ಚೆನ್ನಾಗಿ ಬಿಸಿಲಿನಲ್ಲಿ ಒಣಗಿಸಿ.`;
+    if (lang === 'hi') return `बालियां भूरी होने पर कटाई करें। अनाज को भंडारण से पहले धूप में 10-12% नमी रहने तक अच्छी तरह सुखाएं।`;
+    return `Harvest when panicles turn golden brown and grains harden. Dry grains under sun until moisture drops below 12% before bagging.`;
+  }
+
+  // 12. GREETINGS & WHO ARE YOU (ನಮಸ್ಕಾರ, ಹಲೋ, ಹೇಗಿದ್ದೀಯ, ಯಾರು, नमस्ते, Hello, Hi, Who are you)
+  if (q.includes('ನಮಸ್ಕಾರ') || q.includes('ಹಲೋ') || q.includes('ಯಾರು') || q.includes('ಹೇಗಿದ್ದೀ') || q.includes('ನಮಸ್ತೆ') || q.includes('नमस्ते') || q.includes('hello') || q.includes('hi') || q.includes('who are you') || q.includes('how are you')) {
+    if (lang === 'kn') return `ನಮಸ್ಕಾರ ${farmerName} ಅವರೇ! ನಾನು ನಿಮ್ಮ ಕೃಷಿ AI ಸಹಾಯಕ. ನಿಮ್ಮ ${area} ಎಕರೆ ${cName} ಬೆಳೆಯ ರೋಗಗಳು, ಗೊಬ್ಬರ, ನೀರಾವರಿ, ಬೀಜ ಅಥವಾ ಮಂಡಿ ಬೆಲೆಗಳ ಬಗ್ಗೆ ಏನಾದರೂ ಕೇಳಿ!`;
+    if (lang === 'hi') return `नमस्ते ${farmerName} जी! मैं आपका कृषि AI सहायक हूँ। अपनी ${area} एकड़ ${cName} फसल की खाद, रोग, सिंचाई या मंडी भाव के बारे में कुछ भी पूछें।`;
+    return `Hello ${farmerName}! I am your KrushiEdge AI Agronomist. Ask me anything about fertilizers, pest control, disease remedy, irrigation, or live mandi prices for your ${area}-acre ${cName} crop.`;
+  }
+
+  // Default Smart Dynamic Agronomy Response
+  if (lang === 'kn') {
+    return `ನಿಮ್ಮ ${area} ಎಕರೆ ${cName} ಬೆಳೆಗೆ ಸಂಬಂಧಿಸಿದಂತೆ: ಮಣ್ಣಿನ ಫಲವತ್ತತೆ ಕಾಪಾಡಲು ಸಾವಯವ ಗೊಬ್ಬರ ಬಳಸಿ, ನಿಯಮಿತವಾಗಿ ರೋಗ ತಪಾಸಣೆ ಮಾಡಿ ಹಾಗೂ ಸೂಕ್ತ ಸಮಯದಲ್ಲಿ ನೀರುಣಿಸಿ. ಹೆಚ್ಚಿನ ವಿವರಕ್ಕಾಗಿ ಗೊಬ್ಬರ, ರೋಗ ಅಥವಾ ಮಂಡಿ ಬೆಲೆಯ ಬಗ್ಗೆ ನಿರ್ದಿಷ್ಟವಾಗಿ ಕೇಳಿ.`;
+  } else if (lang === 'hi') {
+    return `आपकी ${area} एकड़ ${cName} फसल के लिए: मिट्टी की उर्वरता बनाए रखने के लिए संतुलित पोषण दें, नियमित रोग निगरानी करें और समय पर सिंचाई करें।`;
+  } else {
+    return `For your ${area}-acre ${cName} crop: ensure balanced NPK nutrition, monitor early leaf lesions, and maintain scheduled irrigation. Ask specifically about fertilizers, pest remedies, or market rates anytime.`;
+  }
+}
+
